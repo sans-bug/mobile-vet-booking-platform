@@ -1,0 +1,98 @@
+# ============================================================
+# Azure Deployment Configuration for VetConnect
+# ============================================================
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  NODE_VERSION: '20.x'
+
+stages:
+  # ── Stage 1: Build & Test ─────────────────────────────────
+  - stage: Build
+    displayName: 'Build Application'
+    jobs:
+      - job: BuildBackend
+        displayName: 'Build Backend API'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+            displayName: 'Set Node.js Version'
+
+          - script: |
+              cd backend
+              npm ci
+              npm run build
+            displayName: 'Install & Compile Backend'
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathtoPublish: 'backend/dist'
+              artifactName: 'backend-dist'
+
+      - job: BuildFrontend
+        displayName: 'Build Frontend React App'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+            displayName: 'Set Node.js Version'
+
+          - script: |
+              cd frontend
+              npm ci
+              npm run build
+            displayName: 'Install & Build React App'
+            env:
+              VITE_API_BASE_URL: $(VITE_API_BASE_URL)
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathtoPublish: 'frontend/dist'
+              artifactName: 'frontend-dist'
+
+  # ── Stage 2: Deploy Backend → Azure App Service ────────────
+  - stage: DeployBackend
+    displayName: 'Deploy Backend to Azure App Service'
+    dependsOn: Build
+    jobs:
+      - deployment: DeployBackendJob
+        displayName: 'Deploy API'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service'
+                  inputs:
+                    azureSubscription: '$(AZURE_SUBSCRIPTION)'
+                    appName: 'vetconnect-api'
+                    package: '$(Pipeline.Workspace)/backend-dist'
+                    runtimeStack: 'NODE|20-lts'
+
+  # ── Stage 3: Deploy Frontend → Azure Static Web Apps ───────
+  - stage: DeployFrontend
+    displayName: 'Deploy Frontend to Azure Static Web Apps'
+    dependsOn: Build
+    jobs:
+      - deployment: DeployFrontendJob
+        displayName: 'Deploy SPA'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureStaticWebApp@0
+                  displayName: 'Deploy to Azure Static Web Apps'
+                  inputs:
+                    app_location: 'frontend'
+                    output_location: 'dist'
+                    azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'

@@ -1,0 +1,19 @@
+{
+  "name": "mobile-vet-booking-platform",
+  "version": "1.0.0",
+  "description": "A full-stack, production-ready web application connecting pet owners with verified veterinarians for clinic visits, online consultations, and emergency home dispatches.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
