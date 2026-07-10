@@ -12,60 +12,61 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '24.x'
+          node-version: '22'
 
-      -- name: Install dependencies
-  working-directory: ./backend
-  run: npm install
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm install
 
-- name: Build backend
-  working-directory: ./backend
-  run: npm run build
+      - name: Build application
+        working-directory: ./backend
+        run: npm run build
 
-- name: Test backend
-  working-directory: ./backend
-  run: npm test --if-present
+      - name: Run tests
+        working-directory: ./backend
+        run: npm test --if-present
 
-      - name: Upload artifact for deployment job
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
+          name: backend-app
           path: ./backend
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: backend-app
+          path: ./backend
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_97ABD0DF87E54A3BA8133FDC6F72DF26 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F61369C3375A4646B41AA3B286BCD553 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F61369C3375A4646B41AA3B286BCDD53 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BDE87D41B4B74BCF85E9FE762C482974 }}
 
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'vetbooking-backend'
-          slot-name: 'Production'
+          app-name: vetbooking-backend
+          slot-name: Production
           package: ./backend
-          
