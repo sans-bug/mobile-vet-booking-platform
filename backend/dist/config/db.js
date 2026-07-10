@@ -12,8 +12,8 @@ const connectDB = async () => {
         console.log('MongoDB connected successfully.');
     }
     catch (error) {
-        console.error('MongoDB connection error:', error);
-        process.exit(1);
+        console.warn('MongoDB connection error:', error);
+        console.warn('Continuing without a database connection. API routes that require persistence will fail until MongoDB is available.');
     }
 };
 exports.connectDB = connectDB;
